@@ -41,7 +41,7 @@ const addToCart = async (req, res) => {
     );
 
     if (itemIndex > -1) {
-      cart.items[itemIndex].quantity += quantity;
+      return res.status(400).json({ message: "Item already in cart" });
     } else {
       cart.items.push({ listing: listingId, quantity });
     }
@@ -61,7 +61,9 @@ const updateCartItem = async (req, res) => {
   const { quantity } = req.body;
 
   try {
-    const cart = await Cart.findOne({ user: req.user.id });
+    const cart = await Cart.findOne({ user: req.user.id }).populate(
+      "items.listing"
+    );
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
@@ -71,7 +73,11 @@ const updateCartItem = async (req, res) => {
     );
 
     if (itemIndex > -1) {
-      cart.items[itemIndex].quantity = quantity;
+      if (quantity <= 0) {
+        cart.items.splice(itemIndex, 1);
+      } else {
+        cart.items[itemIndex].quantity = quantity;
+      }
       await cart.save();
       res.json(cart);
     } else {
@@ -89,7 +95,9 @@ const removeFromCart = async (req, res) => {
   const { itemId } = req.params;
 
   try {
-    const cart = await Cart.findOne({ user: req.user.id });
+    const cart = await Cart.findOne({ user: req.user.id }).populate(
+      "items.listing"
+    );
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
