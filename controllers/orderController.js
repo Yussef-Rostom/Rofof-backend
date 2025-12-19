@@ -26,6 +26,12 @@ const createOrder = async (req, res) => {
           .json({ message: `Sorry, ${item.listing.title} is no longer available` });
       }
 
+      if (listing.seller.toString() === req.user.id.toString()) {
+        return res
+          .status(400)
+          .json({ message: "You cannot purchase your own listing" });
+      }
+
       const order = new Order({
         buyer: req.user.id,
         seller: listing.seller,
@@ -47,6 +53,10 @@ const createOrder = async (req, res) => {
       const savedOrder = await order.save();
       orders.push(savedOrder);
 
+      const User = require("../models/User");
+      await User.findByIdAndUpdate(listing.seller, {
+        $inc: { "sellerStats.totalSales": 1 }
+      });
     }
 
     cart.items = [];
@@ -81,8 +91,8 @@ const getOrderById = async (req, res) => {
 
     const orderToReturn = order.toObject();
     if (orderToReturn.listingInfo && orderToReturn.listingInfo.listingId) {
-        orderToReturn.listingInfo.author = orderToReturn.listingInfo.listingId.author;
-        delete orderToReturn.listingInfo.listingId;
+      orderToReturn.listingInfo.author = orderToReturn.listingInfo.listingId.author;
+      delete orderToReturn.listingInfo.listingId;
     }
 
     res.json(orderToReturn);
@@ -119,38 +129,44 @@ const updateOrderStatus = async (req, res) => {
 // @route   GET /api/orders/my-orders
 // @access  Private
 const getMyOrders = async (req, res) => {
-    try {
-        const orders = await Order.find({ buyer: req.user.id }).populate('listingInfo.listingId', 'author');
-        const ordersToReturn = orders.map(order => {
-            const orderObj = order.toObject();
-            if (orderObj.listingInfo && orderObj.listingInfo.listingId) {
-                orderObj.listingInfo.author = orderObj.listingInfo.listingId.author;
-            }
-            return orderObj;
-        });
-        res.json(ordersToReturn);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
+  try {
+    const orders = await Order.find({ buyer: req.user.id })
+      .populate('listingInfo.listingId', 'author')
+      .populate('seller', 'fullName email')
+      .populate('buyer', 'fullName email');
+    const ordersToReturn = orders.map(order => {
+      const orderObj = order.toObject();
+      if (orderObj.listingInfo && orderObj.listingInfo.listingId) {
+        orderObj.listingInfo.author = orderObj.listingInfo.listingId.author;
+      }
+      return orderObj;
+    });
+    res.json(ordersToReturn);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 }
 
 // @desc    Get logged in user sales
 // @route   GET /api/orders/my-sales
 // @access  Private
 const getMySales = async (req, res) => {
-    try {
-        const sales = await Order.find({ seller: req.user.id }).populate('listingInfo.listingId', 'author');
-        const salesToReturn = sales.map(sale => {
-            const saleObj = sale.toObject();
-            if (saleObj.listingInfo && saleObj.listingInfo.listingId) {
-                saleObj.listingInfo.author = saleObj.listingInfo.listingId.author;
-            }
-            return saleObj;
-        });
-        res.json(salesToReturn);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
+  try {
+    const sales = await Order.find({ seller: req.user.id })
+      .populate('listingInfo.listingId', 'author')
+      .populate('seller', 'fullName email')
+      .populate('buyer', 'fullName email');
+    const salesToReturn = sales.map(sale => {
+      const saleObj = sale.toObject();
+      if (saleObj.listingInfo && saleObj.listingInfo.listingId) {
+        saleObj.listingInfo.author = saleObj.listingInfo.listingId.author;
+      }
+      return saleObj;
+    });
+    res.json(salesToReturn);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 }
 
 module.exports = {

@@ -30,6 +30,10 @@ const addToCart = async (req, res) => {
       return res.status(404).json({ message: "Listing not found" });
     }
 
+    if (listing.seller.toString() === req.user.id.toString()) {
+      return res.status(400).json({ message: "You cannot add your own listing to cart" });
+    }
+
     let cart = await Cart.findOne({ user: req.user.id });
 
     if (!cart) {

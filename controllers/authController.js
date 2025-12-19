@@ -35,12 +35,7 @@ const registerUser = async (req, res) => {
       message: "User registered successfully",
       accessToken,
       refreshToken,
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -65,12 +60,7 @@ const loginUser = async (req, res) => {
       message: "User logged in successfully",
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

@@ -82,36 +82,70 @@ const updatePassword = async (req, res) => {
 // @route   GET /api/account/listings
 // @access  Private
 const getUserListings = async (req, res) => {
-    try {
-        const listings = await Listing.find({ seller: req.user.id });
-        res.json(listings);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
+  try {
+    const listings = await Listing.find({ seller: req.user.id });
+    res.json(listings);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 // @desc    Get incoming orders for user
 // @route   GET /api/account/orders/incoming
 // @access  Private
 const getIncomingOrders = async (req, res) => {
-    try {
-        const orders = await Order.find({ seller: req.user.id }).populate("buyer", "fullName email");
-        res.json(orders);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
+  try {
+    const orders = await Order.find({ seller: req.user.id }).populate("buyer seller", "fullName email");
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 // @desc    Get purchase history of user
 // @route   GET /api/account/orders/purchases
 // @access  Private
 const getPurchaseHistory = async (req, res) => {
-    try {
-        const orders = await Order.find({ buyer: req.user.id }).populate("seller", "fullName email");
-        res.json(orders);
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+  try {
+    const orders = await Order.find({ buyer: req.user.id }).populate("seller buyer", "fullName email");
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Get order details by ID
+// @route   GET /api/account/orders/:id
+// @access  Private
+const getOrderDetails = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("buyer", "fullName email")
+      .populate("seller", "fullName email")
+      .populate("listingInfo.listingId", "author");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
+
+    // Check if user is buyer or seller
+    if (
+      order.buyer._id.toString() !== req.user.id.toString() &&
+      order.seller._id.toString() !== req.user.id.toString()
+    ) {
+      return res.status(401).json({ message: "Not authorized to view this order" });
+    }
+
+    const orderToReturn = order.toObject();
+    if (orderToReturn.listingInfo && orderToReturn.listingInfo.listingId) {
+      orderToReturn.listingInfo.author = orderToReturn.listingInfo.listingId.author;
+      delete orderToReturn.listingInfo.listingId;
+    }
+
+    res.json(orderToReturn);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 module.exports = {
@@ -122,4 +156,5 @@ module.exports = {
   getUserListings,
   getIncomingOrders,
   getPurchaseHistory,
+  getOrderDetails,
 };

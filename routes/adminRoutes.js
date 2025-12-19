@@ -21,30 +21,37 @@ const {
 } = require('../controllers/adminController');
 const { protect } = require('../middlewares/authMiddleware');
 const { admin } = require('../middlewares/adminMiddleware');
+const {
+    validateAddUser,
+    validateUpdateUserStatus,
+    validateChangeUserRole,
+    validateResetUserPassword,
+    validateIdParam,
+} = require('../middlewares/adminValidation');
 
 router.use(protect, admin);
 
 router.get('/dashboard', getDashboardStats);
 
-router.route('/users').get(getUsers).post(addUser);
+router.route('/users').get(getUsers).post(validateAddUser, addUser);
 router.route('/users/:id')
-    .get(getUserById)
-    .put(updateUserStatus)
-    .delete(removeUser);
-router.put('/users/:id/role', changeUserRole);
-router.post('/users/:id/reset-password', resetUserPassword);
-router.get('/users/:id/listings', getUserListingsAdmin);
-router.get('/users/:id/orders', getUserOrdersAdmin);
+    .get(validateIdParam, getUserById)
+    .put(validateUpdateUserStatus, updateUserStatus)
+    .delete(validateIdParam, removeUser);
+router.put('/users/:id/role', validateChangeUserRole, changeUserRole);
+router.post('/users/:id/reset-password', validateResetUserPassword, resetUserPassword);
+router.get('/users/:id/listings', validateIdParam, getUserListingsAdmin);
+router.get('/users/:id/orders', validateIdParam, getUserOrdersAdmin);
 
 router.route('/listings').get(getListings);
 router.route('/listings/:id')
-    .get(getListingById)
-    .delete(deleteListing)
-    .put(updateListing);
+    .get(validateIdParam, getListingById)
+    .delete(validateIdParam, deleteListing)
+    .put(validateIdParam, updateListing);
 
 router.route('/orders').get(getOrders);
 router.route('/orders/:id')
-    .get(getOrderById)
-    .put(updateOrderStatus);
+    .get(validateIdParam, getOrderById)
+    .put(validateIdParam, updateOrderStatus);
 
 module.exports = router;

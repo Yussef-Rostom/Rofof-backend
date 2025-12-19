@@ -8,11 +8,16 @@ const {
     getMySales,
 } = require('../controllers/orderController');
 const { protect } = require('../middlewares/authMiddleware');
+const {
+    validateCreateOrder,
+    validateUpdateOrderStatus,
+    validateOrderId,
+} = require('../middlewares/orderValidation');
 
 router.use(protect);
 
 router.route('/')
-    .post(createOrder);
+    .post(validateCreateOrder, createOrder);
 
 router.route('/my-orders')
     .get(getMyOrders);
@@ -21,9 +26,9 @@ router.route('/my-sales')
     .get(getMySales);
 
 router.route('/:id')
-    .get(getOrderById);
+    .get(validateOrderId, getOrderById);
 
 router.route('/:id/status')
-    .put(updateOrderStatus);
+    .put(validateUpdateOrderStatus, updateOrderStatus);
 
 module.exports = router;
