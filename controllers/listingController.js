@@ -52,7 +52,7 @@ const getFeaturedListings = async (req, res) => {
   try {
     const listings = await Listing.find({ status: "Available" })
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(8)
       .populate("seller", "fullName email sellerStats.totalSales");
 
     res.json(listings);
